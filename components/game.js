@@ -8,7 +8,7 @@ const Score = styled.div`
   color: white;
   float: right;
   position: relative;
-  margin-bottom: -10em;
+  margin-bottom: -100%;
   padding: .5em 1em;
 `;
 
@@ -19,7 +19,8 @@ export class Game extends React.Component {
     this.state = {
       engine: null,
       render: null,
-      score: 0
+      score: 0,
+      generating: false,
     };
   }
 
@@ -101,28 +102,44 @@ export class Game extends React.Component {
       for (const pair of pairs) {
         if (pair.bodyA.isStatic || pair.bodyB.isStatic) {
           map.onPeg.bind(this)(pair.bodyA, pair.bodyB);
-        }
 
-        let volume = Math.pow(pair.bodyB.speed, 3) / PING_VOLUME_CLIP / 4;
-        volume = volume > 1 ? 1 : volume;
-        if (volume > 0.01) {
-          const src = Matter.Common.choose(map.audio.pings);
-          const sound = new Howl({src, volume: (volume > 1 ? 1 : volume)});
-          sound.play()
-        }
-        if (pair.bodyA === bottom) {
-          map.onBottom.bind(this)();
-          Matter.Composite.remove(engine.world, pair.bodyB);
+          let volume = Math.pow(pair.bodyB.speed, 3) / PING_VOLUME_CLIP / 4;
+          volume = volume > 1 ? 1 : volume;
+          if (volume > 0.01) {
+            const sound = Matter.Common.choose(pings);
+            //const sound = new Howl({src, volume: (volume > 1 ? 1 : volume)});
+            sound.volume(volume, sound.play())
+          }
+          if (pair.bodyA === bottom) {
+            map.onBottom.bind(this)();
+            Matter.Composite.remove(engine.world, pair.bodyB);
+          }
         }
       }
     });
 
+
+    // start evertying
+    Render.run(render);
+    Engine.run(engine);
+    this.setState({render, engine, score: 0})
+  }
+
+  onStart() {
+    if (this.state.generating) {
+      // already started
+      return;
+    }
+    this.setState({generating: true});
+
     let off_center = 24;
     let balls = 0;
+    let {width} = this.state.render.options;
+
     let generator = () => {
       if (!document.hidden) {
         const ball_x = width / 2 + Matter.Common.random(off_center) - (off_center * 0.5);
-        Matter.World.add(engine.world,
+        Matter.World.add(this.state.engine.world,
           Matter.Bodies.circle(ball_x, 0 - 50, map.puck.diameter, {
             ...map.puck.body,
             render: {
@@ -135,11 +152,6 @@ export class Game extends React.Component {
       window.setTimeout(generator, 250 + Matter.Common.random(1000) );
     };
     generator();
-
-    // start evertying
-    Render.run(render);
-    Engine.run(engine);
-    this.setState({render, engine, score: 0})
   }
 
   buildMap(world, {layout, x_increment, y_increment}) {
@@ -172,7 +184,7 @@ export class Game extends React.Component {
   }
 
   render() {
-    return <div>
+    return <div onClick={() => this.onStart() }>
       <Score>{this.state.score}</Score> 
       <div ref={el => this.el = el} />
     </div>;

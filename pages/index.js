@@ -6,11 +6,9 @@ import Measure from 'react-measure'
 import {Game} from '../components/game';
 
 const AsideStart = styled.aside`
-  background: red;
 `;
 
 const AsideEnd = styled.aside`
-  background: orange;
 `;
 
 const Main = styled.main`
@@ -27,6 +25,7 @@ function App({query}) {
         </AsideStart>
         <Game height={800} style={{border: '1px solid black'}} />
         <AsideEnd>
+          <p>Click to Start</p>
         </AsideEnd>
       </Main>
     </Layout>

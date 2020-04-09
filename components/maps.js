@@ -5,16 +5,18 @@ const staticProps = {
   render: {fillStyle: '#65737E'}
 }
 
+const DEFAULT_PUCK_BODY = {
+  restitution: 0.4,
+  density:  0.5,
+  friction: 0.001,
+  frictionAir: 0,
+  frictionStatic: 0,
+}
+
 export const config = {
   puck: {
     diameter: 18,
-    body: {
-      restitution: 0.4,
-      density:  0.5,
-      friction: 0.001,
-      frictionAir: 0,
-      frictionStatic: 0,
-    },
+    body: DEFAULT_PUCK_BODY,
     colors: [ "#AB4642", "#A1B56C", "#F7CA88", "#7CAFC2", "#BA8BAF", "#86C1B9", "#D8D8D8", "#DC9656", "#A16946",
     ]
   },
@@ -58,7 +60,7 @@ i  i  i  i  i  i  i  i  i  i  i
 |  |  |  |  |  |  |  |  |  |  |`,
   statics: {
     'O': (x,y) => Matter.Bodies.circle(x, y, 8, {...staticProps, 
-       ...{render: {fillStyle: '#F7CA88'}}
+       ...{render: {fillStyle: '#D0A98F'}}
     }),
     '|': (x,y) => Matter.Bodies.rectangle(x, y, 8, 26, staticProps),
     'i': (x,y) => [
@@ -85,11 +87,11 @@ i  i  i  i  i  i  i  i  i  i  i
     this.setState({score: this.state.score + 1});
   },
   onMouseUp({x, y}) {
-    console.log('mouseup at ', x, y);
+    var diameter = 10;
     const {engine, render} = this.state;
     const {width} = render.options;
     Matter.World.add(engine.world, 
-      Matter.Bodies.circle(x, -12, 12)
+      Matter.Bodies.circle(x, diameter * -0.5, diameter, DEFAULT_PUCK_BODY)
     );
   }
 }

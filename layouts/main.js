@@ -15,6 +15,7 @@ export default ({children}) => (
         width: 100%;
         height: 100%;
         background: #33404a;
+        color: #eee;
       }
     `}</style>
   </>
