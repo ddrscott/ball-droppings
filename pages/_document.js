@@ -1,4 +1,4 @@
-import Document from 'next/document'
+import Document, { Head, Main, NextScript } from "next/document";
 import { ServerStyleSheet } from 'styled-components'
 
 export default class MyDocument extends Document {
@@ -25,5 +25,32 @@ export default class MyDocument extends Document {
     } finally {
       sheet.seal()
     }
+  }
+  render() {
+    return (
+      <html>
+        <Head>
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <meta charSet="utf-8" />
+          <link rel="stylesheet" href="/_next/static/style.css" />
+          <link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon" />
+            <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet"/>
+        </Head>
+        <body>
+          <Main />
+          <NextScript />
+        </body>
+        <style jsx global>{`
+          *, *::before, *::after { box-sizing: border-box }
+          html, body {
+            font-family: "Lucida Console", Monaco, monospace;
+            width: 100%;
+            height: 100%;
+            background: #33404a;
+            color: #eee;
+          }
+        `}</style>
+      </html>
+    );
   }
 }

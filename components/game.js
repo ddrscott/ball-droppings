@@ -4,12 +4,13 @@ import {config as map} from '../components/maps.js';
 import {Howl, Howler} from 'howler';
 import styled from 'styled-components';
 
+import {ragdoll} from '../components/ragdoll.js'
+
 const Score = styled.div`
+  font-size: 1.5em;
+  text-shadow: 2px 2px 10px #000;
   color: white;
-  float: right;
-  position: relative;
-  margin-bottom: -100%;
-  padding: .5em 1em;
+  text-align: center;
 `;
 
 export class Game extends React.Component {
@@ -20,7 +21,10 @@ export class Game extends React.Component {
       engine: null,
       render: null,
       score: 0,
+      bonus_per_second: 1,
+      total_clicks: 0,
       generating: false,
+      bonus_size: 10,
     };
   }
 
@@ -50,18 +54,18 @@ export class Game extends React.Component {
           // showCollisions: true,
           // showVelocity: true,
           wireframes: false,
-          showVelocity: true,
-          showCollisions: true,
-          showSeparations: false,
-          showAxes: false,
-          showPositions: false,
-          showAngleIndicator: false,
-          showIds: false,
-          showShadows: false,
-          showVertexNumbers: false,
-          showConvexHulls: false,
-          showInternalEdges: false,
-          showMousePosition: false,
+          // showVelocity: true,
+          // showCollisions: true,
+          // showSeparations: true,
+          // showAxes: true,
+          // showPositions: true,
+          // showAngleIndicator: true,
+          // showIds: true,
+          // showShadows: true,
+          // showVertexNumbers: true,
+          // showConvexHulls: true,
+          // showInternalEdges: true,
+          // showMousePosition: true,
         }
     });
 
@@ -88,6 +92,10 @@ export class Game extends React.Component {
 
     Matter.Events.on(mouseConstraint, 'mouseup', (event) => {
       map.onMouseUp.bind(this)(event.mouse.position);
+      this.setState({
+        total_clicks: this.state.total_clicks + 1,
+        bonus_per_second: this.state.bonus_per_second + 1,
+      });
     });
     World.add(engine.world, mouseConstraint);
     render.mouse = mouse;
@@ -96,24 +104,36 @@ export class Game extends React.Component {
     const pings = map.audio.pings.map((src) => new Howl({src}));
 
     // an example of using collisionStart event on an engine
-    const PING_VOLUME_CLIP = Math.pow(8, 3);
+    const PING_VOLUME_CLIP = Math.pow(8, 4);
     Matter.Events.on(engine, 'collisionStart', (event) => {
       var pairs = event.pairs;
       for (const pair of pairs) {
         if (pair.bodyA.isStatic || pair.bodyB.isStatic) {
           map.onPeg.bind(this)(pair.bodyA, pair.bodyB);
+        }
 
-          let volume = Math.pow(pair.bodyB.speed, 3) / PING_VOLUME_CLIP / 4;
-          volume = volume > 1 ? 1 : volume;
-          if (volume > 0.01) {
-            const sound = Matter.Common.choose(pings);
-            //const sound = new Howl({src, volume: (volume > 1 ? 1 : volume)});
-            sound.volume(volume, sound.play())
+        if (pair.bodyA.isSensor || pair.bodyB.isSensor) {
+          for (const key of Object.keys(map.goals)) {
+            const goal = map.goals[key];
+            if (goal.body === pair.bodyA) {
+              goal.onCollision(this, pair.bodyB); 
+            }
+            if (goal.body === pair.bodyB) {
+              goal.onCollision(this, pair.bodyA); 
+            }
           }
-          if (pair.bodyA === bottom) {
-            map.onBottom.bind(this)();
-            Matter.Composite.remove(engine.world, pair.bodyB);
-          }
+        }
+
+        let volume = Math.pow(pair.bodyB.speed, 3) / PING_VOLUME_CLIP;
+        volume = volume > 1 ? 1 : volume;
+        if (volume > 0.01) {
+          const sound = Matter.Common.choose(pings);
+          //const sound = new Howl({src, volume: (volume > 1 ? 1 : volume)});
+          sound.volume(volume, sound.play())
+        }
+        if (pair.bodyA === bottom) {
+          map.onBottom.bind(this)(pair.bodyB);
+          Matter.Composite.remove(engine.world, pair.bodyB);
         }
       }
     });
@@ -122,7 +142,9 @@ export class Game extends React.Component {
     // start evertying
     Render.run(render);
     Engine.run(engine);
-    this.setState({render, engine, score: 0})
+
+    let score = parseInt(window.localStorage.getItem('score') || '0');
+    this.setState({render, engine, score})
   }
 
   onStart() {
@@ -136,22 +158,36 @@ export class Game extends React.Component {
     let balls = 0;
     let {width} = this.state.render.options;
 
-    let generator = () => {
+    let bonus_generator = () => {
       if (!document.hidden) {
-        const ball_x = width / 2 + Matter.Common.random(off_center) - (off_center * 0.5);
-        Matter.World.add(this.state.engine.world,
-          Matter.Bodies.circle(ball_x, 0 - 50, map.puck.diameter, {
-            ...map.puck.body,
-            render: {
-              fillStyle: Matter.Common.choose(map.puck.colors)
-            }
-          })
-        );
-        balls += 1;
+        map.onBonus(this);
       }
-      window.setTimeout(generator, 250 + Matter.Common.random(1000) );
+      window.setTimeout(bonus_generator, parseInt(1000 / this.state.bonus_per_second) );
     };
-    generator();
+    bonus_generator();
+
+    this.onSecond();
+  }
+
+  addBody(body) {
+    Matter.World.add(this.state.engine.world, body)
+  }
+
+  onSecond() {
+    this.saveScore();
+
+    let {bonus_per_second} = this.state;
+
+    bonus_per_second = bonus_per_second - 1;
+    if (bonus_per_second < 1) {
+      bonus_per_second = 1;
+    }
+    this.setState({bonus_per_second});
+    window.setTimeout(() => this.onSecond(), 1000);
+  }
+
+  saveScore() {
+    localStorage.setItem('score', this.state.score);
   }
 
   buildMap(world, {layout, x_increment, y_increment}) {
@@ -171,9 +207,6 @@ export class Game extends React.Component {
     }
   }
 
-  componentDidUpdate() {
-  }
-
   componentWillUnmount() {
     const {render, engine} = this.state;
 
@@ -184,9 +217,22 @@ export class Game extends React.Component {
   }
 
   render() {
-    return <div onClick={() => this.onStart() }>
-      <Score>{this.state.score}</Score> 
+    return (
+    <div onClick={() => this.onStart() }>
+      <div><small>Bonus per Second (Click to increase!):</small> {this.state.bonus_per_second} ({parseInt(1000 / this.state.bonus_per_second)} ms)</div>
+      <div><small>Clicks:</small> {this.state.total_clicks}</div>
+        <div><small>Bonus Size:</small>
+          <input
+            type="number" 
+            min="1"
+            max="100"
+            value={this.state.bonus_size}
+            onChange={(e) => this.setState({bonus_size: e.target.value})}
+          />
+          </div>
+      <Score>{this.state.score.toLocaleString()}</Score> 
       <div ref={el => this.el = el} />
-    </div>;
+    </div>
+    );
   }
 }
