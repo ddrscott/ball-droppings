@@ -11,7 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "localforage": "^1.7.3",
-    "next": ">=9.3.2",
+    "next": ">=11.1.0",
     "next-fonts": "^1.1.0",
     "phaser": "^3.23.0",
     "phaser3-rex-plugins": "^1.1.13",
