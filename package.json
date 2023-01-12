@@ -17,7 +17,7 @@
     "next": ">=9.3.2",
     "next-fonts": "^1.1.0",
     "phaser": "^3.23.0",
-    "phaser3-rex-plugins": "^1.1.13",
+    "phaser3-rex-plugins": "^1.1.79",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-draggable": "^4.3.1",
