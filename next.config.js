@@ -9,6 +9,23 @@ const nextConfig = {
     experimental: {
         optimizePackageImports: ['phaser', 'phaser3-rex-plugins']
     },
+    async headers() {
+        return [
+            {
+                source: '/sw.js',
+                headers: [
+                    {
+                        key: 'Cache-Control',
+                        value: 'public, max-age=0, must-revalidate',
+                    },
+                    {
+                        key: 'Service-Worker-Allowed',
+                        value: '/',
+                    },
+                ],
+            },
+        ];
+    },
     webpack: (config, options) => {
         // Handle font files
         config.module.rules.push({

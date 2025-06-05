@@ -1,8 +1,31 @@
 import '../styles/reset.css';
 import '../styles/aspect_ratio.css';
 import '../styles/styles.css';
+import { useEffect } from 'react';
 
 function MyApp({ Component, pageProps }) {
+    useEffect(() => {
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+                .then((registration) => {
+                    console.log('SW registered: ', registration);
+                    registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'activated') {
+                                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                                    window.location.reload();
+                                });
+                            }
+                        });
+                    });
+                })
+                .catch((registrationError) => {
+                    console.log('SW registration failed: ', registrationError);
+                });
+        }
+    }, []);
+
     return <Component {...pageProps} />
 }
 
