@@ -122,6 +122,35 @@ npm install
 npm run dev
 ```
 
+### Testing
+Integration tests are available using Playwright:
+
+```bash
+# Install test dependencies and browsers
+npm install --save-dev @playwright/test
+npx playwright install
+
+# Run all tests
+npx playwright test
+
+# Run tests in specific browser
+npx playwright test --project=chromium
+
+# Run tests with browser UI visible
+npx playwright test --headed
+
+# View HTML test report
+npx playwright show-report
+```
+
+Tests cover:
+- Game loading without console errors
+- Menu functionality and navigation
+- Game start/pause/resume mechanics
+- Tool selection and object dropping
+- Score tracking and map switching
+- Multi-browser compatibility (Chrome, Safari, Mobile Chrome)
+
 ### Dependencies
 - **Phaser 3.90**: Latest game engine with performance improvements
 - **phaser3-rex-plugins 1.60+**: Updated UI plugin system

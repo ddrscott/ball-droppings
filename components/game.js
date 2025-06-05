@@ -2,7 +2,7 @@ import * as Phaser from 'phaser';
 import RexUIPlugin from 'phaser3-rex-plugins/templates/ui/ui-plugin.js';
 import {MatterAttractors} from '../lib/attractors';
 import PropTypes from 'prop-types';
-import React from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {Toolbar, TOOLS} from '../components/toolbar';
 import {ScoreBoard} from '../components/score-board';
 import Board from '../lib/board';
@@ -18,40 +18,40 @@ const natural = {
 };
 
 
-class Game extends React.Component {
+const fetchInt = (key) => {
+    let n = parseInt(localStorage.getItem(key) || 0);
+    return isNaN(n) ? 0 : n;
+}
 
-    constructor(props) {
-        super(props);
+function Game({ map }) {
+    const [tool, setTool] = useState(TOOLS[0]);
+    const [score, setScore] = useState(0);
+    const [topScore, setTopScore] = useState(() => fetchInt(`top_score_${map.name.replace(/\s+/g, '_')}`));
+    const [logs, setLogs] = useState('Loading...');
+    const [showMenu, setShowMenu] = useState(true);
+    const [started, setStarted] = useState(false);
+    const [cheat, setCheat] = useState(false);
+    
+    const gameRef = useRef(null);
 
-        const fetchInt = (key) => {
-            let n = parseInt(localStorage.getItem(key) || 0);
-            return isNaN(n) ? 0 : n;
+    const resizeContainer = useCallback(() => {
+        window.setTimeout(() => {
+            const canvasStyle = document.querySelector('#phaser canvas')?.getAttribute("style");
+            if (canvasStyle) {
+                document.querySelector('.game')?.setAttribute("style", canvasStyle);
+            }
+        }, 10);
+    }, []);
+
+    const setupPhaser = useCallback(() => {
+        if (gameRef.current) {
+            gameRef.current.destroy(true);
         }
 
-        this.state = {
-            tool: TOOLS[0],
-            score: 0,
-            topScore: fetchInt(`top_score_${this.props.map.name.replace(/\s+/g, '_')}`),
-            logs: 'Loading...',
-            showMenu: true,
-            started: false,
-        };
-    }
-
-    setupPhaser() {
-        const {map} = this.props;
-
-        this.game = new Phaser.Game({
+        gameRef.current = new Phaser.Game({
             type: Phaser.AUTO,
             parent: 'phaser',
-            // width: natural.width > window.innerWidth ? window.innerWidth : natural.width,
-            // height: natural.height > window.innerHeight ? window.innerHeight : natural.height,
-            // width: natural.width * window.devicePixelRatio,
-            // height: natural.height * window.devicePixelRatio,
             ...natural,
-            // dom: {
-            //     createContainer: true
-            // },
             physics: {
                 default: 'matter',
             },
@@ -71,135 +71,154 @@ class Game extends React.Component {
         const {Matter} = Phaser.Physics.Matter;
         Matter.use(Matter, MatterAttractors);
 
-        this.game.getState = (k) => this.state[k];
-        this.game.scene.start('preload', {stage: map});
-
-        this.game.events.on('score', (score) => {
-            const newTopScore = Math.max(score, this.state.topScore);
-            if (newTopScore > this.state.topScore) {
-                const mapKey = `top_score_${this.props.map.name.replace(/\s+/g, '_')}`;
-                localStorage.setItem(mapKey, newTopScore);
+        gameRef.current.getState = (k) => {
+            switch(k) {
+                case 'tool': return tool;
+                case 'score': return score;
+                case 'topScore': return topScore;
+                case 'logs': return logs;
+                case 'showMenu': return showMenu;
+                case 'started': return started;
+                case 'cheat': return cheat;
+                default: return undefined;
             }
-            this.setState({score, topScore: newTopScore});
-        });
-        this.game.scale.once('resize', () => this.resizeContainer());
+        };
+        gameRef.current.scene.start('preload', {stage: map});
 
-        document.addEventListener('visibilitychange', () => {
+        gameRef.current.events.on('score', (newScore) => {
+            const newTopScore = Math.max(newScore, topScore);
+            if (newTopScore > topScore) {
+                const mapKey = `top_score_${map.name.replace(/\s+/g, '_')}`;
+                localStorage.setItem(mapKey, newTopScore);
+                setTopScore(newTopScore);
+            }
+            setScore(newScore);
+        });
+        
+        gameRef.current.scale.once('resize', resizeContainer);
+
+        const handleVisibilityChange = () => {
             if (document.visibilityState !== 'visible') {
-                this.setState({showMenu: true});
-                const board = this.game.scene.getScene('board');
-                if (board && !this.game.scene.isPaused('board')) {
-                    this.game.scene.pause('board');
+                setShowMenu(true);
+                const board = gameRef.current?.scene.getScene('board');
+                if (board && !gameRef.current?.scene.isPaused('board')) {
+                    gameRef.current?.scene.pause('board');
                     if (board.current_track && board.current_track.isPlaying) {
                         board.current_track.pause();
                     }
                 }
             }
-        });
-        this.resizeContainer();
-    }
+        };
+        
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        resizeContainer();
+        
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [map, tool, score, topScore, logs, showMenu, started, cheat, resizeContainer]);
 
-    componentDidMount() {
-        const url = window.location.href
-        if (url.indexOf('cheat') > -1) {
-            this.setState({cheat: true});
+    const restartScene = useCallback(() => {
+        setShowMenu(false);
+        setStarted(true);
+        setScore(0);
+
+        const opts = {stage: map};
+        if (gameRef.current) {
+            gameRef.current.scene.stop('board', opts);
+            gameRef.current.scene.start('board', opts);
         }
-        this.setupPhaser();
-    }
+    }, [map]);
 
-
-    componentDidUpdate({map}) {
-        if (map !== this.props.map) {
-            const fetchInt = (key) => {
-                let n = parseInt(localStorage.getItem(key) || 0);
-                return isNaN(n) ? 0 : n;
-            }
-            const newTopScore = fetchInt(`top_score_${this.props.map.name.replace(/\s+/g, '_')}`);
-            this.setState({ score: 0, started: false, topScore: newTopScore });
-            this.game.scene.stop('board');
-            this.game.scene.start('preload', {stage: this.props.map});
-        }
-    }
-
-
-    componentWillUnmount() {
-        // this.game.scene.restart();
-    }
-
-    resizeContainer() {
-        window.setTimeout(() => {
-            const canvasStyle = document.querySelector('#phaser canvas').getAttribute("style");
-            document.querySelector('.game').setAttribute("style", canvasStyle);
-        }, 10);
-    }
-
-    restartScene() {
-        this.setState({ showMenu: false, started: true, score: 0 });
-
-        const opts = {stage: this.props.map};
-        this.game.scene.stop('board', opts);
-        this.game.scene.start('board', opts);
-    }
-
-    togglePause() {
-        const board = this.game.scene.getScene('board');
-        if (this.game.scene.isPaused('board')) {
-            this.setState({showMenu: false});
-            this.game.scene.resume('board');
+    const togglePause = useCallback(() => {
+        const board = gameRef.current?.scene.getScene('board');
+        if (gameRef.current?.scene.isPaused('board')) {
+            setShowMenu(false);
+            gameRef.current?.scene.resume('board');
             if (board && board.current_track && board.current_track.isPaused) {
                 board.current_track.resume();
             }
         } else {
-            this.setState({showMenu: true});
-            this.game.scene.pause('board');
+            setShowMenu(true);
+            gameRef.current?.scene.pause('board');
             if (board && board.current_track && board.current_track.isPlaying) {
                 board.current_track.pause();
             }
         }
-    }
+    }, []);
 
+    const selectedTool = useCallback((tool) => {
+        setTool(tool);
+    }, []);
 
-    selectedTool(tool) {
-        this.setState({tool})
-    }
-
-    switchMap(mapIndex) {
+    const switchMap = useCallback((mapIndex) => {
         Router.push({
             pathname: '/',
             query: { map: mapIndex + 1 },
         });
-    }
+    }, []);
 
-    render() {
-        return <div className="game no-select">
+    // Main effect for mount/unmount and map changes
+    useEffect(() => {
+        // Initial setup on mount
+        const url = window.location.href;
+        if (url.indexOf('cheat') > -1) {
+            setCheat(true);
+        }
+        
+        // Setup Phaser game
+        const cleanup = setupPhaser();
+        
+        // Cleanup function for unmount
+        return () => {
+            cleanup?.();
+            if (gameRef.current) {
+                gameRef.current.destroy(true);
+            }
+        };
+    }, []); // Only run on mount
+
+    // Effect for map changes (after initial mount)
+    useEffect(() => {
+        if (!gameRef.current) return; // Skip if game not initialized yet
+        
+        const newTopScore = fetchInt(`top_score_${map.name.replace(/\s+/g, '_')}`);
+        setScore(0);
+        setStarted(false);
+        setTopScore(newTopScore);
+        
+        gameRef.current.scene.stop('board');
+        gameRef.current.scene.start('preload', {stage: map});
+    }, [map]);
+
+    return (
+        <div className="game no-select">
             <div id="phaser"></div>
             <ScoreBoard
-                title={this.props.map.name}
-                score={this.state.score}
-                topScore={this.state.topScore}
-                logs={this.state.logs}
-                onClick={() => {
-                    this.togglePause();
-                }}
+                title={map.name}
+                score={score}
+                topScore={topScore}
+                logs={logs}
+                onClick={togglePause}
             />
             <MainMenu
-                active={this.state.showMenu}
+                active={showMenu}
             >
-                {this.state.started && (
-                    <button onClick={() => this.togglePause()} onTouchEnd={() => this.togglePause()}>
+                {started && (
+                    <button onClick={togglePause} onTouchEnd={togglePause}>
                         Resume
                     </button>
                 )}
-                <button onClick={() => this.restartScene()} onTouchEnd={() => this.restartScene()}>
-                    {this.state.started ? 'Restart' : 'Start'}
+                <button onClick={restartScene} onTouchEnd={restartScene}>
+                    {started ? 'Restart' : 'Start'}
                 </button>
                 <div style={{textAlign: 'center'}}>
                     <h3>Maps</h3>
-                    {maps.map((map, index) => (
+                    {maps.map((mapItem, index) => (
                         <button 
                             key={index}
-                            onClick={() => this.switchMap(index)}
-                            onTouchEnd={() => this.switchMap(index)}
+                            onClick={() => switchMap(index)}
+                            onTouchEnd={() => switchMap(index)}
                             style={{
                                 display: 'block',
                                 width: '100%',
@@ -208,14 +227,14 @@ class Game extends React.Component {
                                 fontSize: '0.8em',
                             }}
                         >
-                            {index + 1}. {map.name}
+                            {index + 1}. {mapItem.name}
                         </button>
                     ))}
                 </div>
             </MainMenu>
-            {!this.state.showMenu && this.state.started && <Toolbar className="no-select" onChange={(tool) => this.selectedTool(tool)} /> }
+            {!showMenu && started && <Toolbar className="no-select" onChange={selectedTool} />}
         </div>
-    }
+    );
 }
 
 Game.propTypes = {

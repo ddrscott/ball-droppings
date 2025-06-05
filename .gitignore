@@ -1,3 +1,5 @@
 .next/
 node_modules/
 matter-js/
+playwright-report/
+test-results/
