@@ -57,7 +57,7 @@ class Game extends React.Component {
             },
             scale: {
                 mode: Phaser.Scale.FIT,
-                autoCenter: Phaser.Scale.CENTER_HORIZONTALLY,
+                autoCenter: Phaser.Scale.CENTER_HORIZONTAL,
             },
             disableContextMenu: true,
             scene: [Preload, Board],
@@ -172,6 +172,7 @@ class Game extends React.Component {
 
     render() {
         return <div className="game no-select">
+            <div id="phaser"></div>
             <ScoreBoard
                 title={this.props.map.name}
                 score={this.state.score}

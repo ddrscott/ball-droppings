@@ -48,7 +48,6 @@ export default class MyDocument extends Document {
           `}} />
                 </Head>
                 <body>
-                    <div id="phaser"></div>
                     <Main />
                     <NextScript />
                 </body>
