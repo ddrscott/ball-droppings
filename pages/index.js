@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Router from 'next/router'
 import styled from 'styled-components';
 import dynamic from 'next/dynamic'
@@ -44,8 +44,13 @@ function App({query}) {
         setMap(idx);
     }
 
-
     let [mapIdx, setMap] = useState(maps[map - 1] ? parseInt(map) : 1);
+    
+    useEffect(() => {
+        const newMapIdx = maps[map - 1] ? parseInt(map) : 1;
+        setMap(newMapIdx);
+    }, [map]);
+
     return (<>
         <Game className="game" map={maps[mapIdx-1]} />
         </>

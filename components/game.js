@@ -8,6 +8,8 @@ import {ScoreBoard} from '../components/score-board';
 import Board from '../lib/board';
 import Preload from '../lib/preload';
 import {MainMenu} from '../components/main-menu';
+import maps from '../maps';
+import Router from 'next/router';
 
 
 const natural = {
@@ -107,7 +109,9 @@ class Game extends React.Component {
 
     componentDidUpdate({map}) {
         if (map !== this.props.map) {
-            this.game.scene.start('board', {stage: this.props.map});
+            this.setState({ score: 0, started: false });
+            this.game.scene.stop('board');
+            this.game.scene.start('preload', {stage: this.props.map});
         }
     }
 
@@ -153,6 +157,13 @@ class Game extends React.Component {
         this.setState({tool})
     }
 
+    switchMap(mapIndex) {
+        Router.push({
+            pathname: '/',
+            query: { map: mapIndex + 1 },
+        });
+    }
+
     render() {
         return <div className="game no-select">
             <ScoreBoard
@@ -175,6 +186,26 @@ class Game extends React.Component {
                 <button onClick={() => this.restartScene()} onTouchEnd={() => this.restartScene()}>
                     {this.state.started ? 'Restart' : 'Start'}
                 </button>
+                
+                <hr style={{margin: '1em 0', border: '1px solid #333'}} />
+                <div style={{textAlign: 'left'}}>
+                    <h3>Maps:</h3>
+                    {maps.map((map, index) => (
+                        <button 
+                            key={index}
+                            onClick={() => this.switchMap(index)}
+                            onTouchEnd={() => this.switchMap(index)}
+                            style={{
+                                display: 'block',
+                                width: '100%',
+                                marginBottom: '0.5em',
+                                textAlign: 'left'
+                            }}
+                        >
+                            {index + 1}. {map.name}
+                        </button>
+                    ))}
+                </div>
             </MainMenu>
             {!this.state.showMenu && this.state.started && <Toolbar className="no-select" onChange={(tool) => this.selectedTool(tool)} /> }
         </div>
