@@ -28,7 +28,8 @@ class Game extends React.Component {
 
         this.state = {
             tool: TOOLS[0],
-            score: fetchInt('score'),
+            score: 0,
+            topScore: fetchInt('top_score'),
             logs: 'Loading...',
             showMenu: true,
             started: false,
@@ -71,12 +72,25 @@ class Game extends React.Component {
         this.game.getState = (k) => this.state[k];
         this.game.scene.start('preload', {stage: map});
 
-        this.game.events.on('score', (score) => this.setState({score}));
+        this.game.events.on('score', (score) => {
+            const newTopScore = Math.max(score, this.state.topScore);
+            if (newTopScore > this.state.topScore) {
+                localStorage.setItem('top_score', newTopScore);
+            }
+            this.setState({score, topScore: newTopScore});
+        });
         this.game.scale.once('resize', () => this.resizeContainer());
 
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState !== 'visible') {
                 this.setState({showMenu: true});
+                const board = this.game.scene.getScene('board');
+                if (board && !this.game.scene.isPaused('board')) {
+                    this.game.scene.pause('board');
+                    if (board.current_track && board.current_track.isPlaying) {
+                        board.current_track.pause();
+                    }
+                }
             }
         });
         this.resizeContainer();
@@ -110,7 +124,7 @@ class Game extends React.Component {
     }
 
     restartScene() {
-        this.setState({ showMenu: false, started: true });
+        this.setState({ showMenu: false, started: true, score: 0 });
 
         const opts = {stage: this.props.map};
         this.game.scene.stop('board', opts);
@@ -118,13 +132,19 @@ class Game extends React.Component {
     }
 
     togglePause() {
-        //const board = this.game.scene.getScene('board');
+        const board = this.game.scene.getScene('board');
         if (this.game.scene.isPaused('board')) {
             this.setState({showMenu: false});
             this.game.scene.resume('board');
+            if (board && board.current_track && board.current_track.isPaused) {
+                board.current_track.resume();
+            }
         } else {
             this.setState({showMenu: true});
             this.game.scene.pause('board');
+            if (board && board.current_track && board.current_track.isPlaying) {
+                board.current_track.pause();
+            }
         }
     }
 
@@ -138,6 +158,7 @@ class Game extends React.Component {
             <ScoreBoard
                 title={this.props.map.name}
                 score={this.state.score}
+                topScore={this.state.topScore}
                 logs={this.state.logs}
                 onClick={() => {
                     this.togglePause();
