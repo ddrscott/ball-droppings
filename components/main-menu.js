@@ -16,5 +16,5 @@ export function MainMenu({children, active}) {
 
 MainMenu.propTypes = {
     active: PropTypes.bool,
-    children: PropTypes.element.isRequired,
+    children: PropTypes.node.isRequired,
 }

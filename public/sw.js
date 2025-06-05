@@ -1,7 +1,6 @@
-const CACHE_NAME = 'ball-droppings-v2';
+const CACHE_NAME = 'ball-droppings-v3';
 const urlsToCache = [
-  '/',
-  '/edit'
+  '/'
 ];
 
 self.addEventListener('install', function(event) {
@@ -40,7 +39,17 @@ self.addEventListener('fetch', function(event) {
     event.respondWith(
       caches.match(event.request)
         .then(function(response) {
-          return response || fetch(event.request);
+          if (response) {
+            return response;
+          }
+          return fetch(event.request).catch(function() {
+            // If fetch fails, return a basic response for navigation requests
+            if (event.request.mode === 'navigate') {
+              return caches.match('/');
+            }
+            // For other requests, just fail silently
+            return new Response('', { status: 404 });
+          });
         })
     );
   }

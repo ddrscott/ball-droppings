@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import PropTypes from 'prop-types';
 import Draggable from 'react-draggable';
 
@@ -14,14 +14,15 @@ export const TOOLS = [
 
 export function Toolbar({onChange}) {
     const [selected, setSelected] = useState(TOOLS[0]);
+    const nodeRef = useRef(null);
 
     function toolSelected(t) {
         setSelected(t);
         typeof onChange === 'function' && onChange(t);
     }
 
-    return <Draggable>
-        <div className="panel toolbar no-select">
+    return <Draggable nodeRef={nodeRef}>
+        <div ref={nodeRef} className="panel toolbar no-select">
             <h6 className="toolbar-header">Drops</h6>
             {
                 TOOLS.map((t) => 

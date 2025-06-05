@@ -1,7 +1,7 @@
 {
-  "name": "Ball Droppings",
-  "short_name": "Ball Drop",
-  "description": "Physics-based game where balls drop and bounce around",
+  "name": "Droppings",
+  "short_name": "Drop",
+  "description": "Drop the puck. Repeat.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -21,16 +21,6 @@
     {
       "src": "/images/ring-64.png",
       "sizes": "64x64",
-      "type": "image/png"
-    },
-    {
-      "src": "/images/ring-64.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/images/ring-64.png",
-      "sizes": "512x512",
       "type": "image/png"
     }
   ],
