@@ -31,7 +31,7 @@ class Game extends React.Component {
         this.state = {
             tool: TOOLS[0],
             score: 0,
-            topScore: fetchInt('top_score'),
+            topScore: fetchInt(`top_score_${this.props.map.name.replace(/\s+/g, '_')}`),
             logs: 'Loading...',
             showMenu: true,
             started: false,
@@ -77,7 +77,8 @@ class Game extends React.Component {
         this.game.events.on('score', (score) => {
             const newTopScore = Math.max(score, this.state.topScore);
             if (newTopScore > this.state.topScore) {
-                localStorage.setItem('top_score', newTopScore);
+                const mapKey = `top_score_${this.props.map.name.replace(/\s+/g, '_')}`;
+                localStorage.setItem(mapKey, newTopScore);
             }
             this.setState({score, topScore: newTopScore});
         });
@@ -109,7 +110,12 @@ class Game extends React.Component {
 
     componentDidUpdate({map}) {
         if (map !== this.props.map) {
-            this.setState({ score: 0, started: false });
+            const fetchInt = (key) => {
+                let n = parseInt(localStorage.getItem(key) || 0);
+                return isNaN(n) ? 0 : n;
+            }
+            const newTopScore = fetchInt(`top_score_${this.props.map.name.replace(/\s+/g, '_')}`);
+            this.setState({ score: 0, started: false, topScore: newTopScore });
             this.game.scene.stop('board');
             this.game.scene.start('preload', {stage: this.props.map});
         }
@@ -186,10 +192,8 @@ class Game extends React.Component {
                 <button onClick={() => this.restartScene()} onTouchEnd={() => this.restartScene()}>
                     {this.state.started ? 'Restart' : 'Start'}
                 </button>
-                
-                <hr style={{margin: '1em 0', border: '1px solid #333'}} />
-                <div style={{textAlign: 'left'}}>
-                    <h3>Maps:</h3>
+                <div style={{textAlign: 'center'}}>
+                    <h3>Maps</h3>
                     {maps.map((map, index) => (
                         <button 
                             key={index}
@@ -199,7 +203,8 @@ class Game extends React.Component {
                                 display: 'block',
                                 width: '100%',
                                 marginBottom: '0.5em',
-                                textAlign: 'left'
+                                textAlign: 'left',
+                                fontSize: '0.8em',
                             }}
                         >
                             {index + 1}. {map.name}

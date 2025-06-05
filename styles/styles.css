@@ -18,6 +18,8 @@ body {
   padding: 0;
   background: #33404a;
   color: #eee;
+  height: 100vh;
+  overflow: hidden;
 }
 
 small {
@@ -48,6 +50,9 @@ small {
 .game {
   position: absolute;
   top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
   pointer-events: none;
   text-align: center;
 }
@@ -74,16 +79,23 @@ small {
 }
 
 .score-board {
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   background-color: var(--fade-bg-color);
   display: flex;
-  flex: row;
+  flex-direction: row;
   align-items: center;
   height: 48px;
-  /* max-width: var(--full-width); */
+  min-height: 48px;
+  max-height: 48px;
   padding: 0 0.5em;
   padding-bottom: 5px;
   box-shadow: 0px 5px 20px rgba(0,0,0,.5);
+  box-sizing: border-box;
+  z-index: 100;
+  flex-wrap: nowrap;
 }
 
 .score-board-label {
@@ -97,18 +109,27 @@ small {
 }
 
 .score-board-left {
-  flex: 1;
+  flex: 1 1 auto;
   text-align: left;
   white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .score-board-center {
-  flex: 2;
+  flex: 1 1 auto;
   text-align: right;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
 }
+
 .score-board-right {
-  flex: 0;
+  flex: 0 0 auto;
   text-align: right;
+  margin-left: 0.5em;
+  white-space: nowrap;
 }
 
 .toolbar {
@@ -117,6 +138,7 @@ small {
   right: 1em;
   font-size: .8em;
   padding: 0.5em;
+  z-index: 90;
 }
 
 @media (min-width: 600px) {
@@ -146,12 +168,20 @@ small {
 }
 
 .main-menu {
-  background-color: var(--fade-bg-color);
   background-color: rgba(51, 64, 74,.9);
   text-align: center;
-  padding: 1em;
-  margin-top: 30%;
+  padding: 1.5em;
+  margin: auto;
+  max-width: min(400px, 90vw);
+  max-height: 80vh;
+  overflow-y: auto;
   box-shadow: 0px 0px 100px rgba(0,0,0,.9);
+  border-radius: 1.5em;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 200;
 }
 
 .main-menu * {
@@ -226,4 +256,77 @@ button:focus {
 .icon-caret-down {
   -webkit-mask:  url(/images/caret-square-down-regular.svg) no-repeat 50% 50%;
   mask: url(/images/caret-square-down-regular.svg) no-repeat 50% 50%;
+}
+
+/* Responsive fixes */
+@media (max-width: 600px) {
+  .main-menu {
+    padding: 1em;
+    max-width: min(350px, 95vw);
+    max-height: 85vh;
+  }
+  
+  .main-menu button {
+    font-size: 0.9em;
+    margin-top: 0.5em;
+    padding: 0 0.5em;
+  }
+  
+  .score-board {
+    height: 48px;
+    min-height: 48px;
+    max-height: 48px;
+    padding: 0.25em 0.25em;
+    flex-wrap: nowrap;
+  }
+  
+  .score-board-left {
+    flex: 1 1 auto;
+    font-size: 0.85em;
+  }
+  
+  .score-board-center {
+    flex: 1 1 auto;
+    font-size: 0.8em;
+    margin-right: 0.25em;
+  }
+  
+  .score-board-right {
+    flex: 0 0 auto;
+  }
+  
+  .score-board-label {
+    font-size: 9px;
+  }
+  
+  .toolbar {
+    right: 0.5em;
+    top: 0.5em;
+  }
+}
+
+@media (max-width: 400px) {
+  .main-menu {
+    padding: 0.75em;
+    max-width: 95vw;
+  }
+  
+  .score-board {
+    height: 48px;
+    min-height: 48px;
+    max-height: 48px;
+    padding: 0.2em;
+  }
+  
+  .score-board-left {
+    font-size: 0.8em;
+  }
+  
+  .score-board-center {
+    font-size: 0.75em;
+  }
+  
+  .score-board-label {
+    font-size: 8px;
+  }
 }
