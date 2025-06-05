@@ -86,13 +86,17 @@ function Game({ map }) {
         gameRef.current.scene.start('preload', {stage: map});
 
         gameRef.current.events.on('score', (newScore) => {
-            const newTopScore = Math.max(newScore, topScore);
-            if (newTopScore > topScore) {
-                const mapKey = `top_score_${map.name.replace(/\s+/g, '_')}`;
-                localStorage.setItem(mapKey, newTopScore);
-                setTopScore(newTopScore);
-            }
             setScore(newScore);
+            
+            // Update top score if current score exceeds it
+            setTopScore(currentTopScore => {
+                if (newScore > currentTopScore) {
+                    const mapKey = `top_score_${map.name.replace(/\s+/g, '_')}`;
+                    localStorage.setItem(mapKey, newScore);
+                    return newScore;
+                }
+                return currentTopScore;
+            });
         });
         
         gameRef.current.scale.once('resize', resizeContainer);
@@ -116,7 +120,7 @@ function Game({ map }) {
         return () => {
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
-    }, [map, tool, score, topScore, logs, showMenu, started, cheat, resizeContainer]);
+    }, [map, resizeContainer]);
 
     const restartScene = useCallback(() => {
         setShowMenu(false);
@@ -190,6 +194,24 @@ function Game({ map }) {
         gameRef.current.scene.stop('board');
         gameRef.current.scene.start('preload', {stage: map});
     }, [map]);
+
+    // Effect to update game state when tool changes
+    useEffect(() => {
+        if (gameRef.current) {
+            gameRef.current.getState = (k) => {
+                switch(k) {
+                    case 'tool': return tool;
+                    case 'score': return score;
+                    case 'topScore': return topScore;
+                    case 'logs': return logs;
+                    case 'showMenu': return showMenu;
+                    case 'started': return started;
+                    case 'cheat': return cheat;
+                    default: return undefined;
+                }
+            };
+        }
+    }, [tool, score, topScore, logs, showMenu, started, cheat]);
 
     return (
         <div className="game no-select">
